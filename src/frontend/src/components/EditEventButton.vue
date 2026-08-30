@@ -77,7 +77,7 @@ import DeleteEventModal from './DeleteEventModal.vue';
           >
             Close
           </button>
-          <button type="button" class="btn btn-primary" @click="editEvent">Edit</button>
+          <button type="button" class="btn btn-primary" @click="editEvent">Confirm</button>
         </div>
       </div>
     </div>

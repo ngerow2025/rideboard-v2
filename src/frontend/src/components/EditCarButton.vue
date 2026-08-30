@@ -77,7 +77,7 @@ import UserSelectSearch from './UserSelectSearch.vue';
           >
             Close
           </button>
-          <button type="button" class="btn btn-primary" @click="updateCar">Edit</button>
+          <button type="button" class="btn btn-primary" @click="updateCar">Confirm</button>
         </div>
       </div>
     </div>
