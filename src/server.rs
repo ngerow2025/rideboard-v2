@@ -43,7 +43,10 @@ async fn serve_index() -> impl Responder {
 
 fn require_env_var(name: &str) -> String {
     let value = env::var(name).unwrap_or_else(|_| panic!("{name} must be set"));
-    assert!(!value.trim().is_empty(), "{name} environmental variable cannot be empty/missing");
+    assert!(
+        !value.trim().is_empty(),
+        "{name} environmental variable cannot be empty/missing"
+    );
     value
 }
 
