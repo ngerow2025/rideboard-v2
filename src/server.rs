@@ -41,18 +41,26 @@ async fn serve_index() -> impl Responder {
     }
 }
 
-pub async fn main() -> Result<()> {
-    let host = env::var("HOST").unwrap_or("127.0.0.1".to_string());
-    let host_inner = host.clone();
-    let port: i32 = match &env::var("PORT").map(|port| port.parse()) {
-        Ok(Ok(p)) => *p,
-        Ok(Err(_)) => 8080,
-        Err(_) => 8080,
-    };
+fn require_env_var(name: &str) -> String {
+    let value = env::var(name).unwrap_or_else(|_| panic!("{name} must be set"));
+    assert!(
+        !value.trim().is_empty(),
+        "{name} environmental variable cannot be empty/missing"
+    );
+    value
+}
 
+pub async fn main() -> Result<()> {
+    let host = require_env_var("HOST");
+    let host_inner = host.clone();
+    let port: i32 = require_env_var("PORT")
+        .parse()
+        .expect("PORT must be a valid integer");
+
+    let database_url = require_env_var("DATABASE_URL");
     let db_pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
+        .connect(&database_url)
         .await
         .expect("Failed to create pool");
 
@@ -66,11 +74,15 @@ pub async fn main() -> Result<()> {
         .map(|key| Key::from(&key))
         .unwrap_or(Key::generate());
 
-    let redis_conn = redis::Client::open(env::var("REDIS_URL").expect("REDIS_URL must be set"))
+    let redis_url = require_env_var("REDIS_URL");
+
+    let redis_conn = redis::Client::open(redis_url.clone())
         .expect("Failed to create Redis Client")
         .get_multiplexed_async_connection()
         .await
         .expect("Failed to create Redis Connection");
+
+    let csh_userinfo_url = require_env_var("CSH_USERINFO_URL");
 
     info!("Starting server at http://{host}:{port}");
     HttpServer::new(move || {
@@ -86,8 +98,7 @@ pub async fn main() -> Result<()> {
                 google_oauth: google_client,
                 google_userinfo_url: "https://openidconnect.googleapis.com/v1/userinfo".to_string(),
                 csh_oauth: csh_client,
-                csh_userinfo_url: env::var("CSH_USERINFO_URL")
-                    .expect("Missing Userinfo URL for CSH Auth"),
+                csh_userinfo_url: csh_userinfo_url.clone(),
             }))
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), session_key.clone())
